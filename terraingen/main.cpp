@@ -61,10 +61,22 @@ public:
     public:
         int octaveAmount = log2(xLen < yLen ? xLen : yLen);
         int octaves[10][yLen][xLen]; // xLen, yLen < 2^10 = 1024
-        int field[yLen][xLen];
-        int height = 40;
+        int height, field[yLen][xLen];
         
-        Landscape(){
+        void makeField(){
+            for (int y = 0; y < yLen; y++){
+                for (int x = 0; x < xLen; x++){
+                    int sum = 0;
+                    for (int onum = 0; onum < octaveAmount; onum++){
+                        sum += octaves[onum][y][x];
+                    }
+                    field[y][x] = sum / octaveAmount;
+                }
+            }
+        }
+        
+        Landscape(int height){
+            this->height = height;
             for (int onum = 0; onum < octaveAmount; onum++){
                 int tfx = 0, step = pow(2, onum);
                 for (int y = 0; y < yLen; y += step){
@@ -80,15 +92,28 @@ public:
                     }
                 }
             }
-            for (int y = 0; y < yLen; y++){
-                for (int x = 0; x < xLen; x++){
-                    int sum = 0;
-                    for (int onum = 0; onum < octaveAmount; onum++){
-                        sum += octaves[onum][y][x];
+            makeField();
+        }
+        
+        void update(int procent){
+            int prh = (int)((float)height * procent / 100);
+            for (int onum = 0; onum < octaveAmount; onum++){
+                int tfx = 0, step = pow(2, onum);
+                for (int y = 0; y < yLen; y += step){
+                    for (int x = 0; x < xLen; x += step){
+                        tfx = (int)(rand() % prh);
+                        int xm = (x + step) > xLen ? xLen : (x + step);
+                        int ym = (y + step) > yLen ? yLen : (y + step);
+                        for (int j = y; j < ym; j++){
+                            for (int i = x; i < xm; i++){
+                                octaves[onum][j][i] += tfx;
+                                octaves[onum][j][i] %= height;
+                            }
+                        }
                     }
-                    field[y][x] = sum / octaveAmount;
                 }
             }
+            makeField();
         }
         
         void showOctaves(){
@@ -112,7 +137,7 @@ public:
             }
         }
         
-    } landscape;
+    } landscape {40};
     
     class Ghost{
     public:
@@ -231,6 +256,10 @@ int main(){
                         case sf::Keyboard::W:
                             window.close();
                             break;
+                        case sf::Keyboard::U:
+                            //winfld.landscape = WindowField::Landscape();
+                            winfld.landscape.update(5);
+                            break;
                         default:
                             break;
                     }
@@ -240,9 +269,10 @@ int main(){
         }
         
         window.clear();
+        winfld.landscape.update(5);
         winfld.draw(&window);
         window.display();
-        sf::sleep(sf::milliseconds(10));
+        sf::sleep(sf::milliseconds(100));
     }
     return 0;
 }
@@ -252,6 +282,7 @@ long fibonacci(unsigned int n){
     if (n < 2) return n;
     else return fibonacci(n - 1) + fibonacci(n - 2);
 }
+
 
 int main_timer_example(){
     std::chrono::time_point<std::chrono::system_clock> start, end;
